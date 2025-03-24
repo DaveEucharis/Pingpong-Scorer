@@ -1,0 +1,9 @@
+@import 'tailwindcss';
+
+body {
+  @apply bg-black text-white font-['system-ui'];
+}
+
+@utility flex-center {
+  @apply flex items-center justify-center;
+}
