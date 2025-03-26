@@ -1,14 +1,22 @@
-import { SyntheticEvent, useEffect, useLayoutEffect, useState } from 'react'
+import {
+  SyntheticEvent,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
 import './App.css'
 
 import Portrait from './components/Portrait'
+import { dragListener } from './utility/dragListener'
 
 const App = () => {
   const [isLandscape, setIsLandscape] = useState(false)
   const [players, editPlayers] = useState([
-    { pName: 'P1', score: 0, serve: true },
-    { pName: 'P2', score: 0, serve: false },
+    { pName: 'P1', score: 0, serve: true, firstServe: true, win: false },
+    { pName: 'P2', score: 0, serve: false, firstServe: false, win: false },
   ])
+  const isChangeCourt = useRef(false)
 
   const manageScore = {
     add: (pi: number) => {
@@ -22,34 +30,106 @@ const App = () => {
     },
   }
 
-  const manageServe = () => {
-    const sum = players[0].score + players[1].score
-    if (sum % 2 === 0) {
-      editPlayers(prev => prev.map(v => ({ ...v, serve: !v.serve })))
+  const changeServe = (firstServe = false) => {
+    editPlayers(prev => prev.map(v => ({ ...v, serve: !v.serve })))
+
+    if (firstServe)
+      editPlayers(prev => prev.map(v => ({ ...v, firstServe: !v.firstServe })))
+  }
+
+  const handleChangeCourt = (e: SyntheticEvent) => {
+    //spin logo
+    const ele = e.currentTarget as HTMLButtonElement
+    ele.classList.add('spin-360')
+    setTimeout(() => ele.classList.remove('spin-360'), 150)
+
+    isChangeCourt.current = true
+
+    editPlayers(prev => structuredClone(prev).reverse())
+  }
+
+  const checkForWin = () => {
+    //Race to 11
+    const p1Score = players[0].score
+    const p2Score = players[1].score
+
+    if (p1Score > 10 && p1Score > p2Score + 1) {
+      editPlayers(prev =>
+        prev.map((v, i) => (i === 0 ? { ...v, win: true } : v))
+      )
+    } else if (players[0].win) {
+      editPlayers(prev =>
+        prev.map((v, i) => (i === 0 ? { ...v, win: false } : v))
+      )
+    }
+
+    if (p2Score > 10 && p2Score > p1Score + 1) {
+      editPlayers(prev =>
+        prev.map((v, i) => (i === 1 ? { ...v, win: true } : v))
+      )
+    } else if (players[1].win) {
+      editPlayers(prev =>
+        prev.map((v, i) => (i === 1 ? { ...v, win: false } : v))
+      )
     }
   }
 
   useEffect(() => {
-    manageServe()
+    if (!isChangeCourt.current) {
+      //put logic around heree
+      const sum = players[0].score + players[1].score
+
+      if (!(sum % 2)) {
+        const devide = sum / 2
+
+        if (!(devide % 2) && sum !== 2) {
+          //EVEN
+          if (players[0].firstServe && !players[0].serve) changeServe()
+          if (players[1].firstServe && !players[1].serve) changeServe()
+        } else {
+          //ODD
+          if (players[0].firstServe && players[0].serve) changeServe()
+          if (players[1].firstServe && players[1].serve) changeServe()
+        }
+      }
+    } else {
+      isChangeCourt.current = false
+    }
+
+    //Allow Change on Drag if score is 0 0
+    if (players[0].score > 0 || players[1].score > 0) {
+      dragListener()
+    } else {
+      dragListener(changeServe)
+    }
+
+    checkForWin()
   }, [players[0].score, players[1].score])
 
-  const handleChangeCourt = (e: SyntheticEvent) => {
-    editPlayers(prev => structuredClone(prev).reverse())
-  }
+  useEffect(() => {
+    if (players[0].win) {
+    }
 
-  // WINDOW MEDIA HANDLER
-  const windowMedia = window.matchMedia('(orientation: landscape)')
-
-  windowMedia.addEventListener('change', e => {
-    const v = e.matches
-    setIsLandscape(v)
-  })
-
-  const handleFullScreen = (e: SyntheticEvent) => {
-    if (!document.fullscreenElement) e.currentTarget.requestFullscreen()
-  }
+    //RESET
+  }, [players[0].win, players[1].win])
 
   useLayoutEffect(() => {
+    // WINDOW MEDIA HANDLER
+
+    const windowMedia = window.matchMedia('(orientation: landscape)')
+
+    windowMedia.addEventListener('change', e => {
+      const v = e.matches
+      setIsLandscape(v)
+    })
+
+    document.body.addEventListener('dblclick', () => {
+      if (!document.fullscreenElement) {
+        document.body.requestFullscreen()
+        navigator.wakeLock.request('screen')
+      }
+    })
+
     setIsLandscape(windowMedia.matches)
   }, [])
 
@@ -57,13 +137,10 @@ const App = () => {
     <>
       {isLandscape ? (
         <>
-          <section
-            onDoubleClick={handleFullScreen}
-            className='relative flex-center select-none'
-          >
+          <section className='relative flex-center select-none'>
             <button
               onClick={handleChangeCourt}
-              className='absolute z-10'
+              className='absolute z-100 transition-transform rounded-full bg-black p-1'
             >
               <svg
                 xmlns='http://www.w3.org/2000/svg'
@@ -84,27 +161,28 @@ const App = () => {
               <div
                 key={i}
                 className={
-                  'relative flex-1 flex-center h-dvh ' +
+                  'relative flex-1 flex-center h-dvh transition-colors ' +
                   (v.serve ? 'bg-red-500/20' : '')
                 }
               >
-                <input
-                  type='text'
-                  value={v.pName}
-                  className='absolute top-2 text-3xl font-semibold w-50 text-center outline-none'
-                />
+                <h2 className='absolute top-2 text-3xl font-semibold w-50 text-center outline-none'>
+                  {v.pName}
+                </h2>
 
                 <div className=' flex-center flex-col gap-2'>
                   <h1
                     onClick={() => manageScore.add(i)}
-                    className='text-[10rem] font-bold'
+                    className={
+                      'text-[10rem] font-bold transition-colors ' +
+                      (players[i].win ? 'text-green-600' : '')
+                    }
                   >
                     {v.score}
                   </h1>
 
                   <button
                     onClick={() => manageScore.minus(i)}
-                    className='[&>svg]:size-8'
+                    className='[&>svg]:size-8 opacity-60'
                   >
                     <svg
                       fill='#ffffff'
