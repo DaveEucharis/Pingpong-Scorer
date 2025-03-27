@@ -10,7 +10,7 @@ const ListSets = ({ sets }: Props) => {
     <ul className='absolute flex gap-2 bottom-15'>
       {arr.map((v, i) => (
         <li
-          key={i}
+          key={i + v}
           className='size-4 rounded-full bg-amber-500 shadow-orange-700'
         ></li>
       ))}
