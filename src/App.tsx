@@ -9,13 +9,13 @@ import './App.css'
 
 import Portrait from './components/Portrait'
 import { dragListener } from './utility/dragListener'
+import defaultPlayers from './utility/defaultPlayers'
+import ListSets from './components/ListSets'
 
 const App = () => {
   const [isLandscape, setIsLandscape] = useState(false)
-  const [players, editPlayers] = useState([
-    { pName: 'P1', score: 0, serve: true, firstServe: true, win: false },
-    { pName: 'P2', score: 0, serve: false, firstServe: false, win: false },
-  ])
+  const [showSetButton, setShowSetButton] = useState(false)
+  const [players, editPlayers] = useState(defaultPlayers)
   const isChangeCourt = useRef(false)
 
   const manageScore = {
@@ -35,6 +35,15 @@ const App = () => {
 
     if (firstServe)
       editPlayers(prev => prev.map(v => ({ ...v, firstServe: !v.firstServe })))
+  }
+
+  const handleChangeName = (e: SyntheticEvent) => {
+    const ele = e.currentTarget as HTMLInputElement
+    editPlayers(prev =>
+      prev.map((v, i) =>
+        Number(ele.dataset.index) === i ? { ...v, pName: ele.value } : v
+      )
+    )
   }
 
   const handleChangeCourt = (e: SyntheticEvent) => {
@@ -74,6 +83,20 @@ const App = () => {
     }
   }
 
+  const handleReset = () => {
+    editPlayers(defaultPlayers)
+  }
+
+  const handleSet = () => {
+    editPlayers(prev =>
+      prev.map(v =>
+        v.win
+          ? { ...v, win: false, score: 0, set: v.set + 1 }
+          : { ...v, score: 0 }
+      )
+    )
+  }
+
   useEffect(() => {
     if (!isChangeCourt.current) {
       //put logic around heree
@@ -107,7 +130,11 @@ const App = () => {
   }, [players[0].score, players[1].score])
 
   useEffect(() => {
-    if (players[0].win) {
+    if (players[0].win || players[1].win) {
+      setShowSetButton(true)
+      //NEXT SET
+    } else if (showSetButton) {
+      setShowSetButton(false)
     }
 
     //RESET
@@ -138,6 +165,55 @@ const App = () => {
       {isLandscape ? (
         <>
           <section className='relative flex-center select-none'>
+            {showSetButton ? (
+              <button
+                onClick={handleSet}
+                className='absolute text-2xl bottom-4 z-10 bg-black rounded-lg px-6 py-1 border-white border-2 font-semibold'
+              >
+                SET
+              </button>
+            ) : null}
+
+            <button
+              onClick={handleReset}
+              className='absolute [&>svg]:size-10 right-4 top-4 opacity-80 z-10'
+            >
+              <svg
+                viewBox='0 0 21 21'
+                xmlns='http://www.w3.org/2000/svg'
+                fill='#ffffff'
+                stroke='#ffffff'
+              >
+                <g
+                  id='SVGRepo_bgCarrier'
+                  strokeWidth='0'
+                ></g>
+                <g
+                  id='SVGRepo_tracerCarrier'
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                ></g>
+                <g id='SVGRepo_iconCarrier'>
+                  {' '}
+                  <g
+                    fill='none'
+                    fillRule='evenodd'
+                    stroke='#ffffff'
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    transform='matrix(0 1 1 0 2.5 2.5)'
+                  >
+                    {' '}
+                    <path d='m3.98652376 1.07807068c-2.38377179 1.38514556-3.98652376 3.96636605-3.98652376 6.92192932 0 4.418278 3.581722 8 8 8s8-3.581722 8-8-3.581722-8-8-8'></path>{' '}
+                    <path
+                      d='m4 1v4h-4'
+                      transform='matrix(1 0 0 -1 0 6)'
+                    ></path>{' '}
+                  </g>{' '}
+                </g>
+              </svg>
+            </button>
+
             <button
               onClick={handleChangeCourt}
               className='absolute z-100 transition-transform rounded-full bg-black p-1'
@@ -165,11 +241,14 @@ const App = () => {
                   (v.serve ? 'bg-red-500/20' : '')
                 }
               >
-                <h2 className='absolute top-2 text-3xl font-semibold w-50 text-center outline-none'>
-                  {v.pName}
-                </h2>
+                <input
+                  value={v.pName}
+                  data-index={i}
+                  onChange={handleChangeName}
+                  className='absolute top-2 text-3xl font-semibold w-50 text-center outline-none'
+                />
 
-                <div className=' flex-center flex-col gap-2'>
+                <div className='relative flex-center flex-col gap-2'>
                   <h1
                     onClick={() => manageScore.add(i)}
                     className={
@@ -179,6 +258,8 @@ const App = () => {
                   >
                     {v.score}
                   </h1>
+
+                  <ListSets sets={v.set} />
 
                   <button
                     onClick={() => manageScore.minus(i)}
