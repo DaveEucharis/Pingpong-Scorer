@@ -1,6 +1,8 @@
-type T = (changeServe?: (firstServe?: boolean) => void) => void
+type dragListenerChangeServe = (
+  changeServe?: (firstServe?: boolean) => void
+) => void
 
-export const dragListener: T = changeServe => {
+export const dragListenerChangeServe: dragListenerChangeServe = changeServe => {
   const body = document.body
   if (!changeServe) {
     body.ontouchstart = null

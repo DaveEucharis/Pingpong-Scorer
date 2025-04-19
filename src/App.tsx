@@ -8,9 +8,10 @@ import {
 import './App.css'
 
 import Portrait from './components/Portrait'
-import { dragListener } from './utility/dragListener'
-import defaultPlayers from './utility/defaultPlayers'
 import ListSets from './components/ListSets'
+
+import { dragListenerChangeServe } from './utility/dragListener'
+import defaultPlayers from './utility/defaultPlayers'
 
 const App = () => {
   const [isLandscape, setIsLandscape] = useState(false)
@@ -105,7 +106,7 @@ const App = () => {
       if (!(sum % 2)) {
         const devide = sum / 2
 
-        if (!(devide % 2) && sum !== 2) {
+        if (!(devide % 2)) {
           //EVEN
           if (players[0].firstServe && !players[0].serve) changeServe()
           if (players[1].firstServe && !players[1].serve) changeServe()
@@ -121,9 +122,9 @@ const App = () => {
 
     //Allow Change on Drag if score is 0 0
     if (players[0].score > 0 || players[1].score > 0) {
-      dragListener()
+      dragListenerChangeServe()
     } else {
-      dragListener(changeServe)
+      dragListenerChangeServe(changeServe)
     }
 
     checkForWin()
@@ -241,6 +242,7 @@ const App = () => {
                   (v.serve ? 'bg-red-500/20' : '')
                 }
               >
+                {/* Name */}
                 <input
                   value={v.pName}
                   data-index={i}
@@ -248,6 +250,7 @@ const App = () => {
                   className='absolute top-2 text-3xl font-semibold w-50 text-center outline-none'
                 />
 
+                {/* Score */}
                 <div className='relative flex-center flex-col gap-2'>
                   <h1
                     onClick={() => manageScore.add(i)}
@@ -296,6 +299,16 @@ const App = () => {
                     </svg>
                   </button>
                 </div>
+
+                {/* First Serve Indicator */}
+                {v.firstServe ? (
+                  <div
+                    className={
+                      'absolute bg-white h-[60dvh] w-0.5 opacity-60 ' +
+                      (!i ? 'left-5' : 'right-5')
+                    }
+                  ></div>
+                ) : null}
               </div>
             ))}
           </section>
